@@ -1,0 +1,47 @@
+---
+title: "Initial Data Exploration"
+author: "Victoria Hermanson"
+format: html
+editor: visual
+---
+
+## Cleaning dates/times
+
+The first two digits are dates and the next four digits are time. Converting the text to a date/time object. For more info see [EDI](https://portal.edirepository.org/nis/metadataviewer?packageid=knb-lter-pal.95.5).
+
+```{r}
+#| label: read-csv
+
+library(tidyverse)
+seabird_95 <- read_csv(here::here("data/table_95.csv"))
+seabird_95 %>% 
+  select(`Year / Month`, `Day / Time`)
+
+```
+
+```{r}
+#| label: cleaning-dates-times
+
+library(lubridate)
+lter_datetime <- function(ym, dhm) {
+  year2 <- as.numeric(substr(ym, 1, 2))
+  year4 <- ifelse(year2 > 90, 1900 + year2, 2000 + year2)
+  dhm6 <- ifelse(str_length(dhm) == 5, paste0("0", dhm), dhm)
+  ymd_hm(paste0(year4, substr(ym, 3, 4), dhm6), tz = "UTC")
+}
+seabird_95_datetime <- seabird_95 %>% 
+  mutate(sighting_utc = lter_datetime(`Year / Month`, `Day / Time`))
+    #sighting_utc = ymd_hm(paste(`Year / Month`, `Day / Time`), tz = "UTC"))
+```
+
+359 rows failed to parse. Here's what they look like.
+
+```{r}
+#| label: datetime-errors
+
+seabird_95_datetime %>% 
+  select(`Year / Month`, `Day / Time`, sighting_utc) %>% 
+  filter(is.na(sighting_utc)) %>% 
+  DT::datatable()
+
+```
