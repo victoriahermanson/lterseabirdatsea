@@ -14,7 +14,6 @@ library(knitr)
 library(kableExtra)
 library(ggplot2)
 library(dplyr)
-library(geosphere)
 library(stringr)
 library(DT)
 ```
@@ -182,7 +181,7 @@ summary_table <- underway_obvs %>%
   )
 
 # datatable
-
+print(summary_table)
 
 
 
