@@ -1,5 +1,5 @@
 ---
-title: "file-cleanup"
+title: "file-cleanup-and-plots"
 author: V. Hermanson
 format: html
 editor: visual

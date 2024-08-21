@@ -1,0 +1,189 @@
+---
+title: "03_pre_gridding_stats"
+author: V. Hermanson
+format: html
+editor: visual
+---
+
+## Libraries
+
+```{r}
+library(readr)
+library(lubridate)
+library(knitr)
+library(kableExtra)
+library(ggplot2)
+library(dplyr)
+library(geosphere)
+library(stringr)
+library(DT)
+```
+
+## Import data
+
+```{r}
+# read csv
+underway_obvs <- read_csv(here::here("data/underway_obvs.csv"))
+
+# station data
+station_data <- read.csv("data/LTERStns.csv", header = TRUE)
+```
+
+## Calculate distance between lat/long starts
+
+```{r}
+# create a matrix of coordinates for all points
+coordinates <- cbind(underway_obvs$`Longitude Start`, underway_obvs$`Latitude Start`)
+
+# compute distances between consecutive points
+distances <- distHaversine(coordinates[-nrow(coordinates), ], coordinates[-1, ])
+underway_obvs$Distance <- c(distances, NA) 
+
+# plotting distances btwn lat/long coordinates
+plot(underway_obvs$`Longitude Start`, underway_obvs$`Latitude Start`, type = "n", 
+     xlab = "Longitude", ylab = "Latitude", main = "Lat/Long and Distances")
+
+# draw lines between consecutive points
+for (i in 1:(nrow(underway_obvs) - 1)) {
+  segments(underway_obvs$`Longitude Start`[i], underway_obvs$`Latitude Start`[i],
+           underway_obvs$`Longitude Start`[i + 1], underway_obvs$`Latitude Start`[i + 1],
+           col = "lightblue", lwd = 2)
+}
+# add points to the plot
+points(underway_obvs$`Longitude Start`, underway_obvs$`Latitude Start`, pch = 19, col = "maroon")
+```
+
+## Histograms
+
+Split the data
+
+```{r}
+
+## separating the Date/Time column contents into separate columns
+# extract the Julian day, hour, and minute from the `YearDay.Hour.Minute column
+underway_obvs <- underway_obvs %>%
+  mutate(
+    `YearDay/Hour/Minute` = str_pad(as.character(`YearDay/Hour/Minute`), width = 7, pad = "0"),  # Ensure 7 characters
+    JulianDay = substr(`YearDay/Hour/Minute`, 1, 3),  # Extract Julian Day (first 3 characters)
+    Hour = substr(`YearDay/Hour/Minute`, 4, 5),       # Extract Hour (next 2 characters)
+    Minute = substr(`YearDay/Hour/Minute`, 6, 7)      # Extract Minute (last 2 characters)
+  )
+```
+
+Histogram of dates
+
+```{r}
+underway_obvs$JulianDay <- as.numeric(underway_obvs$JulianDay)
+
+# plot histogram for JulianDay
+ggplot(underway_obvs, aes(x = JulianDay)) + 
+  geom_histogram(binwidth = 1, fill = "lightcoral", color = "black") +
+  labs(title = "Histogram of Julian Days", x = "Julian Day", y = "Frequency") +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(0, 365, by = 30),  # set breaks every 30 days
+                     labels = function(x) paste0("Day ", x))  
+```
+
+Histogram of Hours (with outliers)
+
+```{r}
+underway_obvs$Hour <- as.numeric(underway_obvs$Hour)
+
+# check for non-numeric values or NA values
+summary(underway_obvs$Hour)
+
+# plot histogram treating Hour as a continuous variable
+ggplot(underway_obvs, aes(x = Hour)) +
+  geom_histogram(binwidth = 1, fill = "lightblue", color = "black") +
+  labs(title = "Histogram of Hours", x = "Hour of Day", y = "Frequency") +
+  theme_minimal()
+```
+
+Histogram of Hours (without outliers)
+
+```{r}
+# calculate Q1, Q3, and IQR (difference btwn Q3 and Q1)
+Q1 <- quantile(underway_obvs$Hour, 0.25, na.rm = TRUE)
+Q3 <- quantile(underway_obvs$Hour, 0.75, na.rm = TRUE)
+IQR <- Q3 - Q1
+
+# define the lower and upper bounds for outliers
+lower_bound <- Q1 - 1.5 * IQR
+upper_bound <- Q3 + 1.5 * IQR
+
+# filter out the outliers
+underway_obvs_filtered <- underway_obvs %>%
+  filter(Minute >= lower_bound & Minute <= upper_bound)
+
+## histogram of hours
+underway_obvs$Hour <- (underway_obvs$Hour)
+hist(underway_obvs$Hour, breaks = 24, col = "lightblue", 
+     main = "Histogram of Hours", xlab = "Hour of Day", ylab = "Frequency")
+mean((underway_obvs$Hour), na.rm = TRUE)
+```
+
+Histogram of Minutes (with outliers)
+
+```{r}
+underway_obvs$Minute <- as.numeric(underway_obvs$Minute)
+
+# check for non-numeric values or NA values
+summary(underway_obvs$Minute)
+
+# plot histogram treating Minute as a continuous variable
+ggplot(underway_obvs, aes(x = Minute)) +
+  geom_histogram(binwidth = 1, fill = "lightblue", color = "black") +
+  labs(title = "Histogram of Hours", x = "Minute of Day", y = "Frequency") +
+  theme_minimal()
+```
+
+Histogram of Minutes (without outliers)
+
+```{r}
+# calculate Q1, Q3, and IQR (difference btwn Q3 and Q1)
+Q1 <- quantile(underway_obvs$Minute, 0.25, na.rm = TRUE)
+Q3 <- quantile(underway_obvs$Minute, 0.75, na.rm = TRUE)
+IQR <- Q3 - Q1
+
+# define the lower and upper bounds for outliers
+lower_bound <- Q1 - 1.5 * IQR
+upper_bound <- Q3 + 1.5 * IQR
+
+# filter out the outliers
+underway_obvs_filtered <- underway_obvs %>%
+  filter(Minute >= lower_bound & Minute <= upper_bound)
+
+# plot histogram after removing outliers
+ggplot(underway_obvs_filtered, aes(x = Minute)) + 
+  geom_histogram(binwidth = 1, fill = "lightgreen", color = "black") +
+  labs(title = "Histogram of Minutes (Outliers Removed)", x = "Minute", y = "Frequency") +
+  theme_minimal()
+```
+
+## Summary stats for each histogram (without outliers)
+
+```{r}
+# summary statistics for Hour and Minute columns
+summary_table <- underway_obvs %>%
+  summarise(
+    Hour_Min = min(Hour, na.rm = TRUE),
+    Hour_Max = max(Hour, na.rm = TRUE),
+    Hour_Mean = mean(Hour, na.rm = TRUE),
+    Hour_Q25 = quantile(Hour, 0.25, na.rm = TRUE),
+    Hour_Median = median(Hour, na.rm = TRUE),
+    Hour_Q75 = quantile(Hour, 0.75, na.rm = TRUE),
+
+    Minute_Min = min(Minute, na.rm = TRUE),
+    Minute_Max = max(Minute, na.rm = TRUE),
+    Minute_Mean = mean(Minute, na.rm = TRUE),
+    Minute_Q25 = quantile(Minute, 0.25, na.rm = TRUE),
+    Minute_Median = median(Minute, na.rm = TRUE),
+    Minute_Q75 = quantile(Minute, 0.75, na.rm = TRUE)
+  )
+
+# datatable
+
+
+
+
+```

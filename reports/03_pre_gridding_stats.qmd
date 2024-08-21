@@ -20,7 +20,7 @@ library(sp)
 
 When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
 
-```{# underway/transect data}
+```{r}
 underway_data <- read.csv("data/Cruise_Transect_Header_merged_withfixes.csv", header = TRUE) %>% 
   subset(!is.na(as.numeric(Latitude.Start)) & 
            !is.na(as.numeric(Longitude.Start))) %>% 
