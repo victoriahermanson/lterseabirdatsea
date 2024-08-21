@@ -1,0 +1,121 @@
+---
+title: "file-cleanup"
+author: V. Hermanson
+format: html
+editor: visual
+---
+
+## Initial file cleanup
+
+These files are updated by Sage as of 09JULY2024, but still have many errors. Mainly, the lat/long coordinates are mostly fixed for current use. I included another column to fix (by cross referencing event log) the \~20ish single coordinates with errors that Sage identified. I have excluded those for now.
+
+1.  There was still one longitude with a missing decimal point that I manually changed.
+2.  I made sure to include code that will make all lat/long negative, as there was one that was left positive prior.
+
+## Libraries
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+```
+
+## Import files
+
+Cruise_Transect_Header_merged_withfixes = header/transect data
+
+Cruise_Transect_Observations_merged = observation data
+
+LTERStns = station points
+
+```{r}
+#| label: read-csv underway/transect data
+
+underway_data <- read_csv(here::here("data/Cruise_Transect_Header_merged_withfixes.csv")) %>%
+  subset(!is.na(as.numeric(`Latitude Start`)) & 
+           !is.na(as.numeric(`Longitude Start`))) %>% 
+  mutate(`Latitude Start` = as.numeric(`Latitude Start`), 
+         `Longitude Start` = as.numeric(`Longitude Start`)) %>% 
+  mutate(`Latitude Start` = -abs(as.numeric(`Latitude Start`)), 
+         `Longitude Start` = -abs(as.numeric(`Longitude Start`)))
+underway_data$Cruise <- factor(underway_data$Cruise, levels = unique(underway_data$Cruise))
+  levels(underway_data$Cruise) <- c(1993:2019, 2021:2024)
+
+# observation data
+obvs_data <- read_csv(here::here("data/Cruise_Transect_Observations_merged.csv")) %>% 
+  mutate(`Count Minute` = as.numeric(`Count Minute`))
+obvs_data$Cruise <- factor(obvs_data$Cruise, levels = unique(obvs_data$Cruise))
+  levels(obvs_data$Cruise) <- c(1993:2019, 2021:2024)
+
+# #| label: read-csv station data
+# station_data <- read_csv(here::here("data/LTERStns.csv"))
+```
+
+## Merge transect and observation data
+
+Merging transect and observation data by corresponding both the Cruise year and event number
+
+```{r}
+#| label: merge files 
+underway_data$`Event Number` <- as.numeric(underway_data$`Event Number`)
+obvs_data$`Event Number` <- as.numeric(obvs_data$`Event Number`)
+
+underway_obvs <- obvs_data %>%
+  left_join(underway_data, by = c("Cruise", "Event Number"), relationship = "many-to-many")
+
+# write csv
+# write.csv(underway_obvs, file = "underway_obvs.csv", row.names = TRUE)
+```
+
+## Data exploration
+
+```{r}
+species_of_interest <- c("GEPE","ADPE","CHPE")
+
+# filter to include only species of interest
+underway_obvs <- underway_obvs[underway_obvs$Species %in% species_of_interest, ]
+```
+
+Lat Lon - each unique species (presence/absence or all records are a dot)
+
+```{r}
+# determine number of unique species for palette
+num_species <- length(unique(underway_obvs$Species))
+
+# create a color palette with enough distinct colors
+palette <- scales::hue_pal()(num_species)
+
+# plotting presence of species with expanded color palette
+ggplot(underway_obvs, aes(x = `Longitude Start`, y = `Latitude Start`, color = Species)) +
+  geom_point() +
+  scale_color_manual(values = palette) +
+  labs(x = "Longitude", y = "Latitude", title = "Presence of Species") +
+  theme_minimal()
+```
+
+Lat Lon each species - size of circle is \# of individuals
+
+```{r}
+# plot presence of species with size representation based on ind count
+ggplot(underway_obvs, aes(x = `Longitude Start`, y = `Latitude Start`, color = Species, size = Number)) +
+  geom_point(alpha = 0.7) +
+  scale_color_manual(values = palette) +
+  scale_size_continuous(range = c(1, 10)) +  
+  labs(x = "Longitude", y = "Latitude", 
+  title = "Species Distribution with Size by Number of Individuals") +
+  facet_wrap(~ Cruise, nrow = 4) +  # facet by Cruise with 4 plots per row
+  theme_minimal()
+```
+
+Lat Lon each species - color circle by year OR separate plot for each year
+
+```{r}
+# plot presence of species with size representation based on ind count
+ggplot(underway_obvs, aes(x = `Longitude Start`, y = `Latitude Start`, color = Species, size = Number)) +
+  geom_point(alpha = 0.7) +
+  scale_color_manual(values = palette) +
+  scale_size_continuous(range = c(1, 10)) +  
+  labs(x = "Longitude", y = "Latitude", 
+       title = "Species Distribution with Size by Number of Individuals") +
+  theme_minimal()
+```

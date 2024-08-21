@@ -5,3 +5,7 @@
 *.DS_Store
 data/*
 !data/README.md
+.Rdata
+.httr-oauth
+.DS_Store
+.quarto

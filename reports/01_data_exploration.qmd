@@ -13,10 +13,17 @@ The first two digits are dates and the next four digits are time. Converting the
 #| label: read-csv
 
 library(tidyverse)
-seabird_95 <- read_csv(here::here("data/table_95.csv"))
-seabird_95 %>% 
-  select(`Year / Month`, `Day / Time`)
+seabird_95 <- read_csv(here::here("data/Cruise_Transect_Observations_merged.csv"))
 
+#| label: renaming column headers
+colnames(seabird_95) <- c("study","cruisename","year-month","station","eventnumber",
+                          "depth","latitude","longitude", "day-time","seastate","salinity",
+                          "flurorometry","windspeed","winddirection","habitat","icecover", 
+                          "icetype","icecolor","countminute","species","number","linkages",
+                          "behavior","direction","notes")
+
+# seabird_95 %>% 
+#   select(`year-month, `day-time`)
 ```
 
 ```{r}
@@ -30,18 +37,27 @@ lter_datetime <- function(ym, dhm) {
   ymd_hm(paste0(year4, substr(ym, 3, 4), dhm6), tz = "UTC")
 }
 seabird_95_datetime <- seabird_95 %>% 
-  mutate(sighting_utc = lter_datetime(`Year / Month`, `Day / Time`))
+  mutate(sighting_utc = lter_datetime(`year-month`, `day-time`))
     #sighting_utc = ymd_hm(paste(`Year / Month`, `Day / Time`), tz = "UTC"))
 ```
 
-359 rows failed to parse. Here's what they look like.
+359 rows failed to parse. Here's what they look like. It looks like some of the dates are \>31.
 
 ```{r}
 #| label: datetime-errors
 
 seabird_95_datetime %>% 
-  select(`Year / Month`, `Day / Time`, sighting_utc) %>% 
+  select(`eventnumber`, `year-month`, `day-time`, sighting_utc) %>% 
   filter(is.na(sighting_utc)) %>% 
   DT::datatable()
+
+# 3 digits for julian day, 2 digits for hour, 2 digits for min
+
+```
+
+Lat/long exploration.
+
+```{r}
+
 
 ```
