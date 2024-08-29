@@ -139,13 +139,28 @@ Attaching package: 'dplyr'</code></pre>
 <p>Cruise_Transect_Observations_merged = observation data</p>
 <p>LTERStns = station points</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>underway_data <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"data/Cruise_Transect_Header_merged_withfixes.csv"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">subset</span>(<span class="sc">!</span><span class="fu">is.na</span>(<span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span>)) <span class="sc">&amp;</span> </span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>           <span class="sc">!</span><span class="fu">is.na</span>(<span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span>))) <span class="sc">%&gt;%</span> </span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span>), </span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>         <span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span> <span class="ot">=</span> <span class="sc">-</span><span class="fu">abs</span>(<span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span>)), </span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>         <span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span> <span class="ot">=</span> <span class="sc">-</span><span class="fu">abs</span>(<span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># manually fixed two long end points (added column next to it labeled as "Old Longitude End (manually fixed)</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>underway_data <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"data/Cruise_Transect_Header_merged_withfixes.csv"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># filter out where lat/long is not numeric - contains characters</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">subset</span>(<span class="sc">!</span><span class="fu">is.na</span>(<span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span>)) <span class="sc">&amp;</span> </span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>           <span class="sc">!</span><span class="fu">is.na</span>(<span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span>)) <span class="sc">&amp;</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>           <span class="sc">!</span><span class="fu">is.na</span>(<span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Latitude End</span><span class="st">`</span>)) <span class="sc">&amp;</span> </span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>           <span class="sc">!</span><span class="fu">is.na</span>(<span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Longitude End</span><span class="st">`</span>))) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># convert to numeric</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span>), </span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>         <span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span>),</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>         <span class="st">`</span><span class="at">Latitude End</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Latitude End</span><span class="st">`</span>), </span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>         <span class="st">`</span><span class="at">Longitude End</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Longitude End</span><span class="st">`</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co">#  exclude values outside of specific range</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span> <span class="sc">&gt;=</span> <span class="sc">-</span><span class="dv">80</span> <span class="sc">&amp;</span> <span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span> <span class="sc">&lt;=</span> <span class="sc">-</span><span class="dv">55</span>,</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>         <span class="st">`</span><span class="at">Latitude End</span><span class="st">`</span> <span class="sc">&gt;=</span> <span class="sc">-</span><span class="dv">80</span> <span class="sc">&amp;</span> <span class="st">`</span><span class="at">Latitude End</span><span class="st">`</span> <span class="sc">&lt;=</span> <span class="sc">-</span><span class="dv">55</span>,</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>         <span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span> <span class="sc">&gt;=</span> <span class="sc">-</span><span class="dv">80</span> <span class="sc">&amp;</span> <span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span> <span class="sc">&lt;=</span> <span class="sc">-</span><span class="dv">55</span>,</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>         <span class="st">`</span><span class="at">Longitude End</span><span class="st">`</span> <span class="sc">&gt;=</span> <span class="sc">-</span><span class="dv">80</span> <span class="sc">&amp;</span> <span class="st">`</span><span class="at">Longitude End</span><span class="st">`</span> <span class="sc">&lt;=</span> <span class="sc">-</span><span class="dv">55</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="co">#  ensure lat/longs are negative (western &amp; southern hemisphere)</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span> <span class="ot">=</span> <span class="sc">-</span><span class="fu">abs</span>(<span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span>), </span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>         <span class="st">`</span><span class="at">Latitude End</span><span class="st">`</span> <span class="ot">=</span> <span class="sc">-</span><span class="fu">abs</span>(<span class="st">`</span><span class="at">Latitude End</span><span class="st">`</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span> <span class="ot">=</span> <span class="sc">-</span><span class="fu">abs</span>(<span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span>), </span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>         <span class="st">`</span><span class="at">Longitude End</span><span class="st">`</span> <span class="ot">=</span> <span class="sc">-</span><span class="fu">abs</span>(<span class="st">`</span><span class="at">Longitude End</span><span class="st">`</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: One or more parsing issues, call `problems()` on your data frame for details,
 e.g.:
@@ -153,11 +168,12 @@ e.g.:
   problems(dat)</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Rows: 3323 Columns: 38
+<pre><code>Rows: 3323 Columns: 39
 ── Column specification ────────────────────────────────────────────────────────
 Delimiter: ","
 chr (17): studyName, Station Start, Station End, Event Number, Day/Time fix,...
 dbl (21): Cruise, Year/Month, YearDay/Hour/Minute, Total Time, Ship Speed, S...
+lgl  (1): Old Longitude End (manually fixed)
 
 ℹ Use `spec()` to retrieve the full column specification for this data.
 ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
@@ -166,14 +182,21 @@ dbl (21): Cruise, Year/Month, YearDay/Hour/Minute, Total Time, Ship Speed, S...
 <pre><code>Warning in eval(e, x, parent.frame()): NAs introduced by coercion</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Warning in eval(e, x, parent.frame()): NAs introduced by coercion</code></pre>
+<pre><code>Warning in eval(e, x, parent.frame()): NAs introduced by coercion
+Warning in eval(e, x, parent.frame()): NAs introduced by coercion
+Warning in eval(e, x, parent.frame()): NAs introduced by coercion</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>underway_data<span class="sc">$</span>Cruise <span class="ot">&lt;-</span> <span class="fu">factor</span>(underway_data<span class="sc">$</span>Cruise, <span class="at">levels =</span> <span class="fu">unique</span>(underway_data<span class="sc">$</span>Cruise))</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">levels</span>(underway_data<span class="sc">$</span>Cruise) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1993</span><span class="sc">:</span><span class="dv">2019</span>, <span class="dv">2021</span><span class="sc">:</span><span class="dv">2024</span>)</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co"># observation data</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>obvs_data <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"data/Cruise_Transect_Observations_merged.csv"</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="st">`</span><span class="at">Count Minute</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Count Minute</span><span class="st">`</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># adjust cruise (years) to be in chronological order</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>underway_data<span class="sc">$</span>Cruise <span class="ot">&lt;-</span> <span class="fu">factor</span>(underway_data<span class="sc">$</span>Cruise, <span class="at">levels =</span> <span class="fu">unique</span>(underway_data<span class="sc">$</span>Cruise))</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">levels</span>(underway_data<span class="sc">$</span>Cruise) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1993</span><span class="sc">:</span><span class="dv">2019</span>, <span class="dv">2021</span><span class="sc">:</span><span class="dv">2024</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># observation data</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>obvs_data <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"data/Cruise_Transect_Observations_merged.csv"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="st">`</span><span class="at">Count Minute</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Count Minute</span><span class="st">`</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># exclude rows where 'Number' has the value 999</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Number <span class="sc">!=</span> <span class="dv">999</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="co"># filter to include only rows where Species is exactly four alphabetic characters</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>((<span class="fu">grepl</span>(<span class="st">"^[A-Za-z]{4}$"</span>, Species)) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(<span class="st">`</span><span class="at">Count Minute</span><span class="st">`</span>) <span class="sc">&amp;</span> <span class="st">`</span><span class="at">Count Minute</span><span class="st">`</span> <span class="sc">&gt;=</span> <span class="dv">0</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: One or more parsing issues, call `problems()` on your data frame for details,
 e.g.:
@@ -196,11 +219,12 @@ dbl (5): Cruise, Event Number, Number, Linkages, Behavior
 Caused by warning:
 ! NAs introduced by coercion</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>obvs_data<span class="sc">$</span>Cruise <span class="ot">&lt;-</span> <span class="fu">factor</span>(obvs_data<span class="sc">$</span>Cruise, <span class="at">levels =</span> <span class="fu">unique</span>(obvs_data<span class="sc">$</span>Cruise))</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">levels</span>(obvs_data<span class="sc">$</span>Cruise) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1993</span><span class="sc">:</span><span class="dv">2019</span>, <span class="dv">2021</span><span class="sc">:</span><span class="dv">2024</span>)</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># #| label: read-csv station data</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co"># station_data &lt;- read_csv(here::here("data/LTERStns.csv"))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># adjust for sequential yrs</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>obvs_data<span class="sc">$</span>Cruise <span class="ot">&lt;-</span> <span class="fu">factor</span>(obvs_data<span class="sc">$</span>Cruise, <span class="at">levels =</span> <span class="fu">unique</span>(obvs_data<span class="sc">$</span>Cruise))</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">levels</span>(obvs_data<span class="sc">$</span>Cruise) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1993</span><span class="sc">:</span><span class="dv">2019</span>, <span class="dv">2021</span><span class="sc">:</span><span class="dv">2024</span>)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co"># #| label: read-csv station data</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co"># station_data &lt;- read_csv(here::here("data/LTERStns.csv"))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="merge-transect-and-observation-data" class="level2">
@@ -223,10 +247,10 @@ Caused by warning:
 <section id="data-exploration" class="level2">
 <h2 class="anchored" data-anchor-id="data-exploration">Data exploration</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>species_of_interest <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"GEPE"</span>,<span class="st">"ADPE"</span>,<span class="st">"CHPE"</span>)</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co"># filter to include only species of interest</span></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>underway_obvs <span class="ot">&lt;-</span> underway_obvs[underway_obvs<span class="sc">$</span>Species <span class="sc">%in%</span> species_of_interest, ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># species_of_interest &lt;- c("GEPE","ADPE","CHPE")</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co"># # filter to include only species of interest</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="co"># underway_obvs &lt;- underway_obvs[underway_obvs$Species %in% species_of_interest, ]</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Lat Lon - each unique species (presence/absence or all records are a dot)</p>
 <div class="cell">
@@ -237,64 +261,90 @@ Caused by warning:
 <span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>palette <span class="ot">&lt;-</span> scales<span class="sc">::</span><span class="fu">hue_pal</span>()(num_species)</span>
 <span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="co"># plotting presence of species with expanded color palette</span></span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(underway_obvs, <span class="fu">aes</span>(<span class="at">x =</span> <span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span>, <span class="at">y =</span> <span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span>, <span class="at">color =</span> Species)) <span class="sc">+</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>spp_presence <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(underway_obvs, <span class="fu">aes</span>(<span class="at">x =</span> <span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span>, <span class="at">y =</span> <span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span>, <span class="at">color =</span> Species)) <span class="sc">+</span></span>
 <span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
 <span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> palette) <span class="sc">+</span></span>
 <span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Longitude"</span>, <span class="at">y =</span> <span class="st">"Latitude"</span>, <span class="at">title =</span> <span class="st">"Presence of Species"</span>) <span class="sc">+</span></span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Removed 47 rows containing missing values or values outside the scale range
-(`geom_point()`).</code></pre>
-</div>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="02_file_cleanup_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
-</div>
-</div>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">plot.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"white"</span>, <span class="at">color =</span> <span class="cn">NA</span>),  </span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"white"</span>, <span class="at">color =</span> <span class="cn">NA</span>))</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a><span class="co"># ggsave(filename = "spp_presence.png", plot = spp_presence,width = 20, height = 15, </span></span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a><span class="co">#     units = "in",dpi = 300)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Lat Lon each species - size of circle is # of individuals</p>
 <div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot presence of species with size representation based on ind count</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>facet_peng_spp_dist_size <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(underway_obvs, <span class="fu">aes</span>(<span class="at">x =</span> <span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span>, <span class="at">y =</span> <span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span>, <span class="at">color =</span> Species, <span class="at">size =</span> Number)) <span class="sc">+</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> palette) <span class="sc">+</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_size_continuous</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">10</span>)) <span class="sc">+</span>  </span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Longitude"</span>, <span class="at">y =</span> <span class="st">"Latitude"</span>, </span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">title =</span> <span class="st">"Species Distribution with Size by Number of Individuals"</span>) <span class="sc">+</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> Cruise, <span class="at">nrow =</span> <span class="dv">4</span>) <span class="sc">+</span>  <span class="co"># facet by Cruise with 4 plots per row</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">plot.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"white"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"white"</span>, <span class="at">color =</span> <span class="cn">NA</span>))</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a><span class="co"># ggsave(filename = "facet_peng_spp_dist_size.png", plot = facet_peng_spp_dist_size,units = "in",dpi = 300)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Lat Lon each species - color circle by year OR separate plot for each year</p>
+<div class="cell">
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot presence of species with size representation based on ind count</span></span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(underway_obvs, <span class="fu">aes</span>(<span class="at">x =</span> <span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span>, <span class="at">y =</span> <span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span>, <span class="at">color =</span> Species, <span class="at">size =</span> Number)) <span class="sc">+</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>total_spp_dist_size <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(underway_obvs, <span class="fu">aes</span>(<span class="at">x =</span> <span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span>, <span class="at">y =</span> <span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span>, <span class="at">color =</span> Species, <span class="at">size =</span> Number)) <span class="sc">+</span></span>
 <span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
 <span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> palette) <span class="sc">+</span></span>
 <span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_size_continuous</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">10</span>)) <span class="sc">+</span>  </span>
 <span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Longitude"</span>, <span class="at">y =</span> <span class="st">"Latitude"</span>, </span>
-<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">title =</span> <span class="st">"Species Distribution with Size by Number of Individuals"</span>) <span class="sc">+</span></span>
-<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> Cruise, <span class="at">nrow =</span> <span class="dv">4</span>) <span class="sc">+</span>  <span class="co"># facet by Cruise with 4 plots per row</span></span>
-<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Removed 47 rows containing missing values or values outside the scale range
-(`geom_point()`).</code></pre>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Species Distribution with Size by Number of Individuals"</span>) <span class="sc">+</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">plot.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"white"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"white"</span>, <span class="at">color =</span> <span class="cn">NA</span>))</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="co"># ggsave(filename = "total_spp_dist_size.png", plot = total_spp_dist_size, units = "in",dpi = 300)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="02_file_cleanup_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
-</div>
-</div>
-</div>
-<p>Lat Lon each species - color circle by year OR separate plot for each year</p>
+<p>Species plots by year</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot presence of species with size representation based on ind count</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(underway_obvs, <span class="fu">aes</span>(<span class="at">x =</span> <span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span>, <span class="at">y =</span> <span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span>, <span class="at">color =</span> Species, <span class="at">size =</span> Number)) <span class="sc">+</span></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> palette) <span class="sc">+</span></span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_size_continuous</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">10</span>)) <span class="sc">+</span>  </span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Longitude"</span>, <span class="at">y =</span> <span class="st">"Latitude"</span>, </span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Species Distribution with Size by Number of Individuals"</span>) <span class="sc">+</span></span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RColorBrewer)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>species_of_interest <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"SPSK"</span>,<span class="st">"WISP"</span>,<span class="st">"ADPE"</span>,<span class="st">"ANTE"</span>,<span class="st">"GIPE"</span>,<span class="st">"BBAL"</span>,<span class="st">"LMSA"</span>,<span class="st">"GHAL"</span>,<span class="st">"CAPE"</span>,<span class="st">"SOFU"</span>,<span class="st">"GEPE"</span>,<span class="st">"ANPR"</span>,<span class="st">"BLPE"</span>,<span class="st">"BBSP"</span>,<span class="st">"CHPE"</span>,<span class="st">"KEGU"</span>,<span class="st">"BESH"</span>,<span class="st">"UNSK"</span>,<span class="st">"ROAL"</span>,<span class="st">"WCPE"</span>,<span class="st">"UNPE"</span>,<span class="st">"DIPE"</span>,<span class="st">"SNPE"</span>,<span class="st">"ANPE"</span>,<span class="st">"BRSK"</span>,<span class="st">"ARTE"</span>,<span class="st">"UNSP"</span>,<span class="st">"UNAL"</span>,<span class="st">"EMPE"</span>,<span class="st">"TBPR"</span>,<span class="st">"FAPR"</span>,<span class="st">"MAPE"</span>,<span class="st">"WAAL"</span>,<span class="st">"WSIP"</span>,<span class="st">"UNPR"</span>,<span class="st">"BNSW"</span>,<span class="st">"SOAL"</span>,<span class="st">"UNTE"</span>,<span class="st">"TPPR"</span>,<span class="st">"AMSH"</span>,<span class="st">"SGPE"</span>,<span class="st">"SKSP"</span>,<span class="st">"GIPR"</span>,<span class="st">"UNPT"</span>,<span class="st">"BBPE"</span>)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter to include only species of interest</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>underway_obvs <span class="ot">&lt;-</span> underway_obvs[underway_obvs<span class="sc">$</span>Species <span class="sc">%in%</span> species_of_interest, ]</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Determine the number of unique species</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>num_species <span class="ot">&lt;-</span> <span class="fu">length</span>(<span class="fu">unique</span>(underway_obvs<span class="sc">$</span>Species))</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate a color palette based on the number of unique species</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>color_palette <span class="ot">&lt;-</span> <span class="fu">brewer.pal</span>(<span class="at">n =</span> <span class="fu">min</span>(num_species, <span class="dv">12</span>), <span class="at">name =</span> <span class="st">"Set3"</span>)</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="co"># If you need more colors than available in the palette, use `colorRampPalette` to create a custom palette</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (num_species <span class="sc">&gt;</span> <span class="dv">12</span>) {</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>  color_palette <span class="ot">&lt;-</span> <span class="fu">colorRampPalette</span>(<span class="fu">brewer.pal</span>(<span class="dv">12</span>, <span class="st">"Set3"</span>))(num_species)</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Create the facet grid plot for all species combined</span></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(underway_obvs, <span class="fu">aes</span>(<span class="at">x =</span> <span class="st">`</span><span class="at">Longitude Start</span><span class="st">`</span>, <span class="at">y =</span> <span class="st">`</span><span class="at">Latitude Start</span><span class="st">`</span>, <span class="at">size =</span> Number, <span class="at">color =</span> Species)) <span class="sc">+</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.7</span>) <span class="sc">+</span>  <span class="co"># Plot points with transparency</span></span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Species Sightings by Latitude/Longitude"</span>, <span class="at">x =</span> <span class="st">"Longitude"</span>, <span class="at">y =</span> <span class="st">"Latitude"</span>, <span class="at">size =</span> <span class="st">"Number of Individuals"</span>) <span class="sc">+</span></span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span>  <span class="co"># Use a minimal theme for the plot</span></span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">16</span>, <span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">face =</span> <span class="st">"bold"</span>),  <span class="co"># Adjust title appearance</span></span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">10</span>),  <span class="co"># Adjust axis text size</span></span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>),  <span class="co"># Adjust axis title appearance</span></span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>),  <span class="co"># Adjust facet label size</span></span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"lightgray"</span>)  <span class="co"># Facet label background</span></span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> color_palette) <span class="sc">+</span>  <span class="co"># Apply the custom color palette</span></span>
+<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> Cruise <span class="sc">+</span> Species, <span class="at">scales =</span> <span class="st">"free"</span>)  <span class="co"># Facet by year and species</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Warning: Removed 47 rows containing missing values or values outside the scale range
+<pre><code>Warning: Removed 1018 rows containing missing values or values outside the scale range
 (`geom_point()`).</code></pre>
 </div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="02_file_cleanup_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="02_file_cleanup_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>

@@ -13,9 +13,11 @@ library(lubridate)
 library(knitr)
 library(kableExtra)
 library(ggplot2)
+library(geosphere)
 library(dplyr)
 library(stringr)
 library(DT)
+library(tidyr)
 ```
 
 ## Import data
@@ -25,31 +27,7 @@ library(DT)
 underway_obvs <- read_csv(here::here("data/underway_obvs.csv"))
 
 # station data
-station_data <- read.csv("data/LTERStns.csv", header = TRUE)
-```
-
-## Calculate distance between lat/long starts
-
-```{r}
-# create a matrix of coordinates for all points
-coordinates <- cbind(underway_obvs$`Longitude Start`, underway_obvs$`Latitude Start`)
-
-# compute distances between consecutive points
-distances <- distHaversine(coordinates[-nrow(coordinates), ], coordinates[-1, ])
-underway_obvs$Distance <- c(distances, NA) 
-
-# plotting distances btwn lat/long coordinates
-plot(underway_obvs$`Longitude Start`, underway_obvs$`Latitude Start`, type = "n", 
-     xlab = "Longitude", ylab = "Latitude", main = "Lat/Long and Distances")
-
-# draw lines between consecutive points
-for (i in 1:(nrow(underway_obvs) - 1)) {
-  segments(underway_obvs$`Longitude Start`[i], underway_obvs$`Latitude Start`[i],
-           underway_obvs$`Longitude Start`[i + 1], underway_obvs$`Latitude Start`[i + 1],
-           col = "lightblue", lwd = 2)
-}
-# add points to the plot
-points(underway_obvs$`Longitude Start`, underway_obvs$`Latitude Start`, pch = 19, col = "maroon")
+station_data <- read_csv(here::here("data/LTERStns.csv"))
 ```
 
 ## Histograms
@@ -157,6 +135,92 @@ ggplot(underway_obvs_filtered, aes(x = Minute)) +
   geom_histogram(binwidth = 1, fill = "lightgreen", color = "black") +
   labs(title = "Histogram of Minutes (Outliers Removed)", x = "Minute", y = "Frequency") +
   theme_minimal()
+```
+
+Histogram of ship speed (kts)
+
+```{r}
+# check for non-numeric values or NA values
+summary(underway_obvs$`Ship Speed`)
+underway_obvs$`Ship Speed` <- as.numeric(underway_obvs$`Ship Speed`)
+
+# plot histogram treating `Ship Speed` as a continuous variable
+ggplot(underway_obvs, aes(x = `Ship Speed`)) +
+  geom_histogram(binwidth = 1, fill = "lightblue", color = "black") +
+  labs(title = "Histogram of Ship Speed", x = "Ship Speed", y = "Frequency") +
+  theme_minimal()
+
+## histogram without outliers
+# calculate Q1, Q3, and IQR (difference btwn Q3 and Q1)
+Q1 <- quantile(underway_obvs$`Ship Speed`, 0.25, na.rm = TRUE)
+Q3 <- quantile(underway_obvs$`Ship Speed`, 0.75, na.rm = TRUE)
+IQR <- Q3 - Q1
+
+# define the lower and upper bounds for outliers
+lower_bound <- Q1 - 1.5 * IQR
+upper_bound <- Q3 + 1.5 * IQR
+
+# filter out the outliers
+underway_obvs_filtered <- underway_obvs %>%
+  filter(`Ship Speed` >= lower_bound & `Ship Speed` <= upper_bound)
+
+# plot histogram after removing outliers
+ggplot(underway_obvs_filtered, aes(x = `Ship Speed`)) + 
+  geom_histogram(binwidth = 1, fill = "lightgreen", color = "black") +
+  labs(title = "Histogram of Ship Speed (Outliers Removed)", x = "Ship Speed", y = "Frequency") +
+  theme_minimal()
+
+```
+
+Histogram of Count Minute (time spent surveying)
+
+Use the largest value in the Event
+
+```{r}
+# check for non-numeric values or NA values
+summary(underway_obvs$`Count Minute`)
+underway_obvs$`Count Minute` <- as.numeric(underway_obvs$`Count Minute`)
+
+underway_obvs <- underway_obvs %>%
+  mutate(`Count Minute` = as.numeric(`Count Minute`)) %>%   # Ensure the column is numeric
+  mutate(`Count Minute` = replace_na(`Count Minute`, 0)) %>% # Replace NAs with 0
+  filter(`Count Minute` >= 0 & `Count Minute` <= 200)        # Exclude negative values and values > 200
+
+
+# exclude rows with negative values
+underway_obvs <- underway_obvs %>%
+  filter(`Count Minute` >= 0)
+
+# check summary after processing
+summary(underway_obvs$`Count Minute`)
+
+# plot histogram treating `Count Minute` as a continuous variable
+ggplot(underway_obvs, aes(x = `Count Minute`)) +
+  geom_histogram(binwidth = 1, fill = "lightblue", color = "black") +
+  labs(title = "Histogram of Count Minute", x = "Ship Speed", y = "Frequency") +
+  theme_minimal()
+
+## histogram without outliers
+# calculate Q1, Q3, and IQR (difference btwn Q3 and Q1)
+Q1 <- quantile(underway_obvs$`Count Minute`, 0.25, na.rm = TRUE)
+Q3 <- quantile(underway_obvs$`Count Minute`, 0.75, na.rm = TRUE)
+IQR <- Q3 - Q1
+
+# define the lower and upper bounds for outliers
+lower_bound <- Q1 - 1.5 * IQR
+upper_bound <- Q3 + 1.5 * IQR
+
+# filter out the outliers
+underway_obvs_filtered <- underway_obvs %>%
+  filter(`Count Minute` >= lower_bound & `Count Minute` <= upper_bound)
+
+# plot histogram after removing outliers
+ggplot(underway_obvs_filtered, aes(x = `Count Minute`)) + 
+  geom_histogram(binwidth = 1, fill = "lightgreen", color = "black") +
+  labs(title = "Histogram of Count Minute (Outliers Removed)", x = "Ship Speed", y = "Frequency") +
+  theme_minimal()
+
+summary(underway_obvs$`Count Minute`)
 ```
 
 ## Summary stats for each histogram (without outliers)

@@ -31,21 +31,42 @@ LTERStns = station points
 ```{r}
 #| label: read-csv underway/transect data
 
+# manually fixed two long end points (added column next to it labeled as "Old Longitude End (manually fixed)
 underway_data <- read_csv(here::here("data/Cruise_Transect_Header_merged_withfixes.csv")) %>%
+  # filter out where lat/long is not numeric - contains characters
   subset(!is.na(as.numeric(`Latitude Start`)) & 
-           !is.na(as.numeric(`Longitude Start`))) %>% 
+           !is.na(as.numeric(`Longitude Start`)) &
+           !is.na(as.numeric(`Latitude End`)) & 
+           !is.na(as.numeric(`Longitude End`))) %>% 
+  # convert to numeric
   mutate(`Latitude Start` = as.numeric(`Latitude Start`), 
-         `Longitude Start` = as.numeric(`Longitude Start`)) %>% 
-  mutate(`Latitude Start` = -abs(as.numeric(`Latitude Start`)), 
-         `Longitude Start` = -abs(as.numeric(`Longitude Start`)))
+         `Longitude Start` = as.numeric(`Longitude Start`),
+         `Latitude End` = as.numeric(`Latitude End`), 
+         `Longitude End` = as.numeric(`Longitude End`)) %>% 
+#  exclude values outside of specific range
+  filter(`Latitude Start` >= -80 & `Latitude Start` <= -55,
+         `Latitude End` >= -80 & `Latitude End` <= -55,
+         `Longitude Start` >= -80 & `Longitude Start` <= -55,
+         `Longitude End` >= -80 & `Longitude End` <= -55) %>%
+#  ensure lat/longs are negative (western & southern hemisphere)
+  mutate(`Latitude Start` = -abs(`Latitude Start`), 
+         `Latitude End` = -abs(`Latitude End`)) %>%
+  mutate(`Longitude Start` = -abs(`Longitude Start`), 
+         `Longitude End` = -abs(`Longitude End`))
+# adjust cruise (years) to be in chronological order
 underway_data$Cruise <- factor(underway_data$Cruise, levels = unique(underway_data$Cruise))
-  levels(underway_data$Cruise) <- c(1993:2019, 2021:2024)
+levels(underway_data$Cruise) <- c(1993:2019, 2021:2024)
 
 # observation data
 obvs_data <- read_csv(here::here("data/Cruise_Transect_Observations_merged.csv")) %>% 
-  mutate(`Count Minute` = as.numeric(`Count Minute`))
+  mutate(`Count Minute` = as.numeric(`Count Minute`)) %>%
+  # exclude rows where 'Number' has the value 999
+  filter(Number != 999) %>%
+# filter to include only rows where Species is exactly four alphabetic characters
+  filter((grepl("^[A-Za-z]{4}$", Species)) & !is.na(`Count Minute`) & `Count Minute` >= 0) 
+# adjust for sequential yrs
 obvs_data$Cruise <- factor(obvs_data$Cruise, levels = unique(obvs_data$Cruise))
-  levels(obvs_data$Cruise) <- c(1993:2019, 2021:2024)
+levels(obvs_data$Cruise) <- c(1993:2019, 2021:2024)
 
 # #| label: read-csv station data
 # station_data <- read_csv(here::here("data/LTERStns.csv"))
@@ -70,10 +91,10 @@ underway_obvs <- obvs_data %>%
 ## Data exploration
 
 ```{r}
-species_of_interest <- c("GEPE","ADPE","CHPE")
-
-# filter to include only species of interest
-underway_obvs <- underway_obvs[underway_obvs$Species %in% species_of_interest, ]
+# species_of_interest <- c("GEPE","ADPE","CHPE")
+# 
+# # filter to include only species of interest
+# underway_obvs <- underway_obvs[underway_obvs$Species %in% species_of_interest, ]
 ```
 
 Lat Lon - each unique species (presence/absence or all records are a dot)
@@ -86,36 +107,87 @@ num_species <- length(unique(underway_obvs$Species))
 palette <- scales::hue_pal()(num_species)
 
 # plotting presence of species with expanded color palette
-ggplot(underway_obvs, aes(x = `Longitude Start`, y = `Latitude Start`, color = Species)) +
+spp_presence <- ggplot(underway_obvs, aes(x = `Longitude Start`, y = `Latitude Start`, color = Species)) +
   geom_point() +
   scale_color_manual(values = palette) +
   labs(x = "Longitude", y = "Latitude", title = "Presence of Species") +
-  theme_minimal()
+  theme_minimal() +
+    theme(plot.background = element_rect(fill = "white", color = NA),  
+        panel.background = element_rect(fill = "white", color = NA))
+
+
+# ggsave(filename = "spp_presence.png", plot = spp_presence,width = 20, height = 15, 
+#     units = "in",dpi = 300)
 ```
 
 Lat Lon each species - size of circle is \# of individuals
 
 ```{r}
 # plot presence of species with size representation based on ind count
-ggplot(underway_obvs, aes(x = `Longitude Start`, y = `Latitude Start`, color = Species, size = Number)) +
+facet_peng_spp_dist_size <- ggplot(underway_obvs, aes(x = `Longitude Start`, y = `Latitude Start`, color = Species, size = Number)) +
   geom_point(alpha = 0.7) +
   scale_color_manual(values = palette) +
   scale_size_continuous(range = c(1, 10)) +  
   labs(x = "Longitude", y = "Latitude", 
   title = "Species Distribution with Size by Number of Individuals") +
   facet_wrap(~ Cruise, nrow = 4) +  # facet by Cruise with 4 plots per row
-  theme_minimal()
+  theme_minimal() +
+    theme(plot.background = element_rect(fill = "white", color = NA),
+        panel.background = element_rect(fill = "white", color = NA))
+
+# ggsave(filename = "facet_peng_spp_dist_size.png", plot = facet_peng_spp_dist_size,units = "in",dpi = 300)
 ```
 
 Lat Lon each species - color circle by year OR separate plot for each year
 
 ```{r}
 # plot presence of species with size representation based on ind count
-ggplot(underway_obvs, aes(x = `Longitude Start`, y = `Latitude Start`, color = Species, size = Number)) +
+total_spp_dist_size <- ggplot(underway_obvs, aes(x = `Longitude Start`, y = `Latitude Start`, color = Species, size = Number)) +
   geom_point(alpha = 0.7) +
   scale_color_manual(values = palette) +
   scale_size_continuous(range = c(1, 10)) +  
   labs(x = "Longitude", y = "Latitude", 
        title = "Species Distribution with Size by Number of Individuals") +
-  theme_minimal()
+  theme_minimal() +
+    theme(plot.background = element_rect(fill = "white", color = NA),
+        panel.background = element_rect(fill = "white", color = NA))
+
+# ggsave(filename = "total_spp_dist_size.png", plot = total_spp_dist_size, units = "in",dpi = 300)
+```
+
+Species plots by year
+
+```{r}
+library(RColorBrewer)
+species_of_interest <- c("SPSK","WISP","ADPE","ANTE","GIPE","BBAL","LMSA","GHAL","CAPE","SOFU","GEPE","ANPR","BLPE","BBSP","CHPE","KEGU","BESH","UNSK","ROAL","WCPE","UNPE","DIPE","SNPE","ANPE","BRSK","ARTE","UNSP","UNAL","EMPE","TBPR","FAPR","MAPE","WAAL","WSIP","UNPR","BNSW","SOAL","UNTE","TPPR","AMSH","SGPE","SKSP","GIPR","UNPT","BBPE")
+
+# Filter to include only species of interest
+underway_obvs <- underway_obvs[underway_obvs$Species %in% species_of_interest, ]
+
+# Determine the number of unique species
+num_species <- length(unique(underway_obvs$Species))
+
+# Generate a color palette based on the number of unique species
+color_palette <- brewer.pal(n = min(num_species, 12), name = "Set3")
+
+# If you need more colors than available in the palette, use `colorRampPalette` to create a custom palette
+if (num_species > 12) {
+  color_palette <- colorRampPalette(brewer.pal(12, "Set3"))(num_species)
+}
+
+# Create the facet grid plot for all species combined
+ggplot(underway_obvs, aes(x = `Longitude Start`, y = `Latitude Start`, size = Number, color = Species)) +
+  geom_point(alpha = 0.7) +  # Plot points with transparency
+  labs(title = "Species Sightings by Latitude/Longitude", x = "Longitude", y = "Latitude", size = "Number of Individuals") +
+  theme_minimal() +  # Use a minimal theme for the plot
+  theme(
+    plot.title = element_text(size = 16, hjust = 0.5, face = "bold"),  # Adjust title appearance
+    axis.text = element_text(size = 10),  # Adjust axis text size
+    axis.title = element_text(size = 12, face = "bold"),  # Adjust axis title appearance
+    strip.text = element_text(size = 12),  # Adjust facet label size
+    strip.background = element_rect(fill = "lightgray")  # Facet label background
+  ) +
+  scale_color_manual(values = color_palette) +  # Apply the custom color palette
+  facet_wrap(~ Cruise + Species, scales = "free")  # Facet by year and species
+
 ```

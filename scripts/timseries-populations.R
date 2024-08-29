@@ -62,10 +62,10 @@ p <- ggplot(filtered_data, aes(x = Category, y = x, color = Group.2, group = Gro
   geom_point(size = 2) +  # Add points for each data point
   labs(title = "Species Sightings Over Time", x = "Year", y = "Count") +
   theme_minimal() +  # Customize plot theme
-  theme(plot.title = element_text(size = 14, hjust = 0.5, face = "bold"),  # Adjust title appearance
+  theme(plot.title = element_text(size = 14, hjust = 0.5, face = "bold"),  # adjust title appearance
         axis.text = element_text(size = 8),  # Adjust axis text size
-        axis.title = element_text(size = 12, face = "bold")) +  # Adjust axis title appearance
-  scale_color_manual(values = c("magenta", "cyan", "darkgreen"))  # Custom colors for each species
+        axis.title = element_text(size = 12, face = "bold")) +  # adjust axis title appearance
+  scale_color_manual(values = c("magenta", "cyan", "darkgreen"))  # custom colors for each species
 
 
 # # Create time series for one species plot with line and points
