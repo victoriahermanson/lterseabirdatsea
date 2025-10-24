@@ -10,7 +10,7 @@ execute:
 editor: visual
 ---
 
-## Chapter 1, Part 1/2 
+## Chapter 1, Part 1/2
 
 ### Basic summary stats –\> clustering –\> gap statistic
 
@@ -321,7 +321,7 @@ ggplot(annual_spp_density, aes(x = Cruise, y = Mean_Density, group = Species)) +
 
 ```
 
-## Separate Station.Start 
+## Separate Station.Start
 
 ### Wanted to merge predator data with grid data by GridLine & GridStation
 
