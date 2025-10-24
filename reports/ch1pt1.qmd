@@ -1,0 +1,699 @@
+---
+title: "Chapter 1, Part 1"
+author: "Victoria Hermanson"
+format: html
+  self-contained: true 
+execute:
+  echo: true               
+  warning: false           
+  message: false
+editor: visual
+---
+
+## Chapter 1, Part 1/2 
+
+### Basic summary stats –\> clustering –\> gap statistic
+
+#### Read in files
+
+```{r}
+#| label: read in files
+
+# load libraries
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggmap)
+library(kableExtra)
+library(maps)
+library(stringr)
+library(circular)
+library(viridis)
+
+predator_data <- read.csv("../data/underway_obvs_filterednopick.csv") %>%
+  filter(!is.na(Species), Species != "NONE") %>%
+  filter(Number != 999)
+
+predator_data$Number <- as.numeric(predator_data$Number)
+
+
+grid_data <- read.csv("../data/LTERStns_edited.csv")
+## merge UNSK with SPSK
+predator_data <- predator_data %>%
+  mutate(Species = case_when(
+    Species == "UNSK" ~ "SPSK",  # replace UNSK with SPSK
+    TRUE ~ Species               
+  ))
+
+
+# you have distance calculated, grid lines, and Julian day, hr, min
+```
+
+## Species Abundance
+
+```{r}
+#| label: Species Abundance
+
+# summarize total sightings per species
+species_summary <- predator_data %>%
+  filter(!is.na(Species)) %>%
+  group_by(Species) %>%
+  summarise(total_sightings = sum(as.numeric(Number), na.rm = TRUE)) %>%
+  arrange(desc(total_sightings))
+
+#dev.off()
+# total sightings across all species
+total_sightings_all <- sum(species_summary$total_sightings)
+# number of unique species
+num_species <- nrow(species_summary)
+# top 5
+top_species <- head(species_summary, 5)
+
+
+unknown_species_summary <- predator_data %>%
+  filter(str_starts(Species, "UN")) %>%
+  mutate(Number = as.numeric(Number)) %>%
+  filter(!is.na(Number)) %>%
+  group_by(Species) %>%
+  summarise(total_sightings = sum(Number), .groups = "drop") %>%
+  arrange(desc(total_sightings))
+
+# total sightings across all species
+total_un_sightings_all <- sum(unknown_species_summary$total_sightings)
+# number of unique species
+num_un_species <- nrow(unknown_species_summary)
+# top 5
+top_un_species <- head(unknown_species_summary, 5)
+
+ggplot(species_summary, aes(x = reorder(Species, -total_sightings), y = total_sightings)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  scale_y_log10() +  # <-- log-transform y-axis
+  labs(title = "Total Sightings per Species (log scale)",
+       x = "Species",
+       y = "Log10 Total Sightings") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 9))
+
+#ggsave("totalspp_sightings_log_plot.png", width = 10, height = 6, dpi = 300)
+
+```
+
+## Species Frequency
+
+```{r}
+#| label: Species Frequency
+
+# species frequency (number of observations per species per year)
+frequency_by_year <- predator_data %>%
+  group_by(Species, Cruise) %>%
+  summarise(frequency = n(), .groups = "drop")
+
+# linear model for each species (only those observed in ≥3 years)
+# frequency_trends <- frequency_by_year %>%
+#   group_by(Species) %>%
+#   filter(n() >= 4) %>%
+#   summarise(
+#     slope = coef(lm(frequency ~ Cruise))[["Cruise"]],
+#     p_value = summary(lm(frequency ~ Cruise))$coefficients[2, 4],
+#     .groups = "drop"
+#   )
+
+# total number of events spp was seen
+total_frequency <- predator_data %>%
+  group_by(Species) %>%
+  filter(!is.na(Species)) %>%
+  summarise(total_frequency = n(), .groups = "drop") %>%
+  arrange(desc(total_frequency))
+
+# how many years spp was seen throughout dataset
+years_present <- predator_data %>%
+  group_by(Species) %>%
+  summarise(years_seen = n_distinct(Cruise), .groups = "drop")
+
+# total and number of yrs spp was seen
+species_freq_summary <- total_frequency %>%
+  left_join(years_present, by = "Species") %>%
+  arrange(desc(total_frequency))
+
+```
+
+## Species Richness
+
+```{r}
+#| label: Species Richness
+
+richness_by_year <- predator_data %>%
+  filter(!is.na(Species), !is.na(Cruise)) %>%    
+  group_by(Cruise) %>%
+  summarise(species_richness = n_distinct(Species), .groups = "drop")
+
+min_richness <- min(richness_by_year$species_richness)
+max_richness <- max(richness_by_year$species_richness)
+mean_richness <- mean(richness_by_year$species_richness)
+year_min <- richness_by_year$Cruise[which.min(richness_by_year$species_richness)]
+year_max <- richness_by_year$Cruise[which.max(richness_by_year$species_richness)]
+
+# simple linear model
+model <- lm(species_richness ~ Cruise, data = richness_by_year)
+summary(model)
+
+spprichness_lm <- ggplot(richness_by_year, aes(x = Cruise, y = species_richness)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE, color = "blue") +
+  labs(title = "Species Richness by Cruise",
+       x = "Cruise",
+       y = "Species Richness")
+
+ggsave("species_richness_by_cruise.png", plot = spprichness_lm, width = 8, 
+       height = 6, dpi = 300)
+
+```
+
+## Density Calculations & Plots
+
+```{r}
+#| label: Density Calculations & Plots
+
+bird_spp_of_interest <- c("SPSK","WISP","ADPE","ANTE","GIPT","BBAL","LMSA","GHAL",
+                          "CAPT","SOFU","GEPE","ANPR","BLPT","BBSP","CHPE","KEGU",
+                          "BESH","UNSK","ROAL","WCPE","UNPE","DIPT","SNPT","ANPT",
+                          "BRSK","ARTE","UNSP","UNAL","EMPE","TBPR","FAPR","MAPE",
+                          "WAAL","WSIP","UNPR","BNSW","SOAL","UNTE","TPPR","AMSH",
+                          "SGPE","SKSP","GIPR","UNPT","BBPE")
+
+# strip width: 300m for seabirds, 900m for cetaceans
+# converted to km
+predator_data <- predator_data %>%
+  mutate(Strip.Width = ifelse(Species %in% bird_spp_of_interest, 0.3, 0.9))
+
+# distance is in km (from haversine function)
+
+# calc the area covered for each event
+# distance is in km
+predator_data <- predator_data %>%
+  mutate(Area.Covered = Distance * Strip.Width)
+
+# to account for any distances that were 0 perchance
+# predator_data$Number <- as.numeric(predator_data$Number)
+# predator_data <- predator_data %>%
+#   mutate(Density = ifelse(Area.Covered > 0, Number / Area.Covered, NA))
+
+predator_data <- predator_data %>%
+  mutate(
+    Number = as.numeric(Number),
+    Area.Covered = as.numeric(Area.Covered),
+    Density = ifelse(!is.na(Area.Covered) & Area.Covered > 0,
+                     Number / Area.Covered,
+                     NA_real_)
+  )
+
+```
+
+## Long-term mean and variance calcs/plots
+
+```{r}
+#| label: Long-term mean and variance calcs/plots
+
+longterm_spp_density <- predator_data %>%
+  group_by(Species) %>%
+  summarise(
+    Mean_Density = mean(Density, na.rm = TRUE),
+    SD_Density = sd(Density, na.rm = TRUE),
+    .groups = 'drop'
+  )
+
+longterm_spp_density <- longterm_spp_density %>%
+  mutate(Species = reorder(Species, Mean_Density))
+
+# dot and error bars
+ltdens_dotanderror <- ggplot(longterm_spp_density, aes(x = reorder(Species, Mean_Density), y = Mean_Density)) +
+  geom_point(color = "darkgreen", size = 3) +
+  geom_errorbar(aes(ymin = Mean_Density - SD_Density,
+                    ymax = Mean_Density + SD_Density),
+                width = 0.2, color = "darkgreen") +
+  coord_flip() +
+  theme_classic(base_size = 14) +
+  labs(
+    x = "Species",
+    y = "Long-term Mean Density"
+  )
+
+# ggsave("longterm_density_dotanderror.png",
+#        plot = ltdens_dotanderror,
+#        width = 8, height = 6, units = "in", dpi = 300)
+
+# box plots
+ltdens_boxplot <- ggplot(predator_data, aes(x = Species, y = Density)) +
+  geom_violin(fill = "lightgreen", alpha = 0.5) +
+  geom_boxplot(width = 0.2, outlier.shape = NA) +
+  theme_classic(base_size = 14) +
+  coord_flip() +
+  labs(
+    x = "Species",
+    y = "Density (across years)"
+  )
+print(ltdens_boxplot)
+
+# ggsave("longterm_density_boxplot.png",
+#        plot = ltdens_boxplot,
+#        width = 8, height = 6, units = "in", dpi = 300)
+
+ggplot(longterm_spp_density, aes(x = Species, y = Mean_Density)) +
+  geom_col(fill = "lightgreen") +
+  geom_errorbar(aes(ymin = Mean_Density - SD_Density, ymax = Mean_Density + SD_Density),
+                width = 0.2, color = "darkgreen") +
+  theme_classic() +
+  labs(
+    title = "Long-Term Mean Density per Species",
+    x = "Species",
+    y = "Mean Density"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# ggsave("longterm_density_plot.png", 
+#        plot = last_plot(), 
+#        width = 10, height = 6, units = "in", dpi = 300)
+
+```
+
+## Annual mean and variance calcs/plots
+
+```{r}
+#| label: Annual mean and variance calcs/plots
+
+annual_spp_density <- predator_data %>%
+  group_by(Cruise, Species) %>%
+  summarise(
+    Mean_Density = mean(Density, na.rm = TRUE),
+    SD_Density = sd(Density, na.rm = TRUE),
+    .groups = 'drop'
+  )
+
+print(annual_spp_density)
+
+# plotting
+ggplot(annual_spp_density, aes(x = Cruise, y = Mean_Density, group = Species)) +
+  geom_ribbon(aes(ymin = Mean_Density - SD_Density,
+                  ymax = Mean_Density + SD_Density,
+                  fill = Species), alpha = 0.2, colour = NA) +
+  geom_line(aes(color = Species), size = 0.5) +
+  facet_wrap(~ Species, scales = "free_y") +
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.background = element_rect(fill = "white", color = NA),   
+    plot.background = element_rect(fill = "white", color = NA),
+    axis.text.y = element_text(size = 8),     
+  ) +
+  labs(
+    title = "Annual Mean Density per Species",
+    x = "Cruise",
+    y = "Mean Density"
+  ) +
+  theme(
+    legend.position = "none",  # each facet only has one species, so no need for a legend
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+# ggsave("annual_density_plot.png",
+#        plot = last_plot(),
+#        width = 10, height = 6, units = "in", dpi = 300)
+
+```
+
+## Separate Station.Start 
+
+### Wanted to merge predator data with grid data by GridLine & GridStation
+
+### This would assign each observation to a region
+
+```{r}
+#| label: Separate Station.Start
+
+# ensure Station.Start is character
+predator_data <- predator_data %>%
+  mutate(Station.Start = as.character(Station.Start))
+
+# separate gridline and gridstation
+predator_data <- predator_data %>%
+  mutate(
+    # Extract GridLine (before first dot)
+    GridLine = as.numeric(str_extract(Station.Start, "^[^\\.]+")),
+    # Extract the part after the first dot
+    station_part = str_replace(Station.Start, "^[^\\.]+\\.", "")
+  ) %>%
+  mutate(
+    GridStation_raw = case_when(
+      # e.g. "14.5"
+      str_detect(station_part, "\\.") ~ as.numeric(station_part),
+      
+      # e.g. "-020"
+      str_detect(station_part, "^\\-\\d+$") ~ as.numeric(station_part),
+      
+      # three or more digits -> direct numeric (e.g. "080" -> 80)
+      str_detect(station_part, "^\\d{3,}$") ~ as.numeric(station_part),
+      
+      # two digits -> multiply by 10 (e.g. "04" -> 40, "14" -> 140)
+      str_detect(station_part, "^\\d{2}$") ~ as.numeric(station_part) * 10,
+      
+      # one digit -> multiply by 100 (e.g. "2" -> 200)
+      str_detect(station_part, "^\\d{1}$") ~ as.numeric(station_part) * 100,
+      
+      TRUE ~ NA_real_
+    )
+  ) %>%
+  mutate(
+    # round to nearest 20 (to match bin size)
+    GridStation = if_else(!is.na(GridStation_raw),
+                          round(GridStation_raw / 20) * 20,
+                          NA_real_)
+  ) %>%
+  select(-station_part, -GridStation_raw)
+
+```
+
+## Separate by region
+
+```{r}
+
+#| label: Separate by region
+
+predator_data <- predator_data %>%
+  mutate(
+    GridLine = round(GridLine / 100) * 100   # round to nearest 100
+  )
+
+# predator_data <- predator_data %>%
+#   mutate(
+#     GridStation = round(GridStationOrig / 20) * 20,
+#     GridLine = round(GridLineOrig / 100) * 100
+#     )
+
+predator_data <- predator_data %>%
+  mutate(
+    GridLine = as.numeric(GridLine),
+    GridStation = as.numeric(GridStation)
+  )
+
+# merge predator data with station data
+seabird_df <- merge(predator_data, grid_data, by = c("GridLine", "GridStation"))
+
+```
+
+## Climatology maps
+
+#### Climatology maps separated by species, with individual plots [here](https://docs.google.com/document/d/1gSkA4JbkxIu9SqdTmdP9s0hqliipCSjqj2N0GFEtHCM/edit?tab=t.9luj0eq0bqta).
+
+```{r}
+#| label: Climatology maps
+
+# top 10 species by total density
+top10_species <- seabird_df %>%
+  group_by(Species) %>%
+  summarize(total_density = sum(Density, na.rm = TRUE)) %>%
+  arrange(desc(total_density)) %>%
+  slice_head(n = 10) %>%
+  pull(Species)
+# annual mean predator densities per region
+
+# subset data to only include top 10 spp
+seabird_top10 <- seabird_df %>%
+  filter(Species %in% top10_species)
+
+
+# climatology maps per spp
+climatology <- seabird_df %>%
+  group_by(Species, GridLine, GridStation, Longitude.Start, Latitude.Start) %>%
+  summarize(mean_density = mean(Density, na.rm = TRUE))
+
+
+ggplot(climatology, aes(x = Longitude.Start, y = Latitude.Start, color = mean_density)) +
+  geom_point(size = 3) +
+  scale_color_viridis_c(option = "C", trans = "log10", name = "Mean density (log10)") +
+  coord_fixed() +
+  facet_wrap(~Species) +
+  theme_minimal() +
+  theme(strip.text = element_text(face = "bold"))
+
+
+# # separate plots for each spp
+# species_list <- unique(climatology$Species)
+# 
+# # loop through each species and save 
+# for (sp in species_list) {
+#   spp_data <- filter(climatology, Species == sp)
+#   
+# # plot
+# separate_clim_eachspp <- ggplot(spp_data, aes(x = Longitude.Start, y = Latitude.Start, color = mean_density)) +
+#   geom_point(size = 3, alpha = 0.9) +
+#   scale_color_viridis_c(option = "C", trans = "log10", name = "Mean density (log10)") +
+#   coord_fixed() +
+#   theme_classic(base_size = 14) +
+#   theme(
+#     panel.grid = element_blank(),
+#     panel.background = element_rect(fill = "white", color = NA),
+#     strip.text = element_text(face = "bold"),
+#     legend.position = "bottom"
+#   ) +
+#   labs(
+#     title = paste("Climatology Map:", sp),
+#     x = "Longitude",
+#     y = "Latitude"
+#   )
+# ggsave(
+#   filename = paste0("climatology_", gsub(" ", "_", sp), ".png"),
+#   plot = separate_clim_eachspp,
+#   width = 8,
+#   height = 6,
+#   dpi = 300
+# )
+# }
+
+
+
+# climatology maps for the top ten spp
+climatology_top10 <- seabird_df %>%
+  filter(Species %in% top10_species) %>%
+  group_by(Species, GridLine, GridStation, Longitude.Start, Latitude.Start) %>%
+  summarize(mean_density = mean(Density, na.rm = TRUE), .groups = "drop") %>%
+  mutate(
+    Longitude.Start = as.numeric(Longitude.Start),
+    Latitude.Start = as.numeric(Latitude.Start),
+    Species = trimws(Species)
+  )
+
+topten <- ggplot(filter(climatology_top10, mean_density > 0),
+       aes(x = Longitude.Start, y = Latitude.Start, color = mean_density)) +
+  geom_point(size = 2.5, alpha = 0.9) +
+  scale_color_viridis_c(
+    option = "C",
+    trans = "log10",
+    name = "Mean density (log10)"
+  ) +
+  facet_wrap(~Species, ncol = 5) +
+  coord_quickmap() +
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.background = element_rect(fill = "white", color = NA),   # panel area
+    plot.background = element_rect(fill = "white", color = NA),    # entire figure
+    panel.grid = element_blank(),
+    strip.background = element_rect(fill = "white", color = "gray70"),
+    strip.text = element_text(face = "bold"),
+    legend.position = "bottom",
+    legend.key.width = unit(2, "cm")
+  ) +
+  labs(
+    x = "Longitude",
+    y = "Latitude",
+    title = "Predator Climatology Maps (1993–2023)",
+    subtitle = "Top 10 species by mean density"
+  )
+
+ggsave(
+  filename = "seabird_climatology_top10.png", 
+  plot = topten,                                 
+  width = 16, height = 10,                   
+  dpi = 300                                 
+)
+
+## single out specific species
+
+target_species <- "ADPE"
+
+climatology_one <- seabird_df %>%
+  filter(Species == target_species) %>%
+  group_by(GridLine, GridStation, Longitude.Start, Latitude.Start) %>%
+  summarize(mean_density = mean(Density, na.rm = TRUE), .groups = "drop")
+
+ggplot(climatology_one, aes(x = Longitude.Start, y = Latitude.Start, color = mean_density)) +
+  geom_point(size = 3) +
+  scale_color_viridis_c(option = "C", trans = "log10", name = "Mean density (log10)") +
+  coord_fixed() +
+  labs(title = target_species) +
+  theme_minimal()
+
+
+
+```
+
+## Linear regression for bins
+
+```{r}
+#| label: Linear regression for bins
+
+# first coefficient is intercept
+# second coefficient is slope - rate of change per year (trend)
+linreg <- seabird_df %>%
+  mutate(bin = paste(Offshore, NorthSouthFar, sep = "_")) %>%
+  group_by(bin) %>%
+  summarise(
+# the slope — how fast density changes per year
+    slope = if (n_distinct(Cruise) > 1) coef(lm(Density ~ Cruise))[2] else NA_real_,
+# the p-value testing if slope differs from zero
+    p_value = if (n_distinct(Cruise) > 1) summary(lm(Density ~ Cruise))$coefficients[2, 4] else NA_real_,
+# how much of the density variation the line explains (trend strength)
+    r_squared = if (n_distinct(Cruise) > 1) summary(lm(Density ~ Cruise))$r.squared else NA_real_
+  )
+
+print(linreg)
+
+linreg_top10 <- seabird_df %>%
+  mutate(bin = paste(Offshore, NorthSouthFar, sep = "_")) %>%
+  group_by(bin) %>%
+  summarise(
+    # the slope — how fast density changes per year
+    slope = if (n_distinct(Cruise) > 1) coef(lm(Density ~ Cruise))[2] else NA_real_,
+    # the p-value testing if slope differs from zero
+    p_value = if (n_distinct(Cruise) > 1) summary(lm(Density ~ Cruise))$coefficients[2, 4] else NA_real_,
+    # how much of the density variation the line explains (trend strength)
+    r_squared = if (n_distinct(Cruise) > 1) summary(lm(Density ~ Cruise))$r.squared else NA_real_
+  )
+
+print(linreg_top10)
+
+# p-value indicates how statistically significant slope is (< 0.05)
+
+```
+
+## Correlation & clustering
+
+### Notes on top ten species clustering [here](https://docs.google.com/document/d/1gSkA4JbkxIu9SqdTmdP9s0hqliipCSjqj2N0GFEtHCM/edit?tab=t.0).
+
+```{r}
+#| label: Correlation & clustering
+
+# mean density per species per bin
+species_bin <- seabird_df %>%
+  group_by(Species, Offshore, NorthSouthFar) %>%
+  summarize(mean_density = mean(Density, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(bin = paste(Offshore, NorthSouthFar, sep = "_")) %>%
+  select(Species, bin, mean_density) %>%
+  pivot_wider(names_from = bin, values_from = mean_density, values_fill = 0)
+
+# create species-by-bin matrix
+species_matrix <- as.data.frame(species_bin)
+rownames(species_matrix) <- species_matrix$Species
+species_matrix <- species_matrix[, -1]
+
+# find Pearson correlation coefficient (for distance)
+# transposes the matrix so that species become columns (since cor() calcs correlations between columns)
+# (1-cor) converts correlations into distances (high correlation = small distance)
+# as.dost converts matrix into a formal “distance” object for hierarchical clustering
+dist_matrix <- as.dist(1 - cor(t(species_matrix), method = "pearson"))
+cor_matrix <- cor(t(species_matrix), method = "pearson")
+view(cor_matrix)
+
+# cluster
+# clusters species based on how similar their density patterns are
+# 1 - r = distance
+# "average" defines how clusters merge based on average pairwise distance
+hc <- hclust(dist_matrix, method = "average")
+
+# plot dendrogram
+png("dendrogram.png", width = 800, height =300)
+par(mar = c(5, 10, 4, 2))
+plot(hc, main = "Species Clustering Dendrogram")
+dev.off()
+
+# simple heatmap w/dendrogram 
+# heatmap(
+#   cor_matrix,
+#   Rowv = as.dendrogram(hc),   
+#   Colv = as.dendrogram(hc),
+#   col = colorRampPalette(c("blue", "white", "red"))(100),
+#   scale = "none",
+#   margins = c(8, 8),
+#   main = "Species Correlation Heatmap"
+# )
+
+
+# blue: strong negative correlation (close to -1)
+# white: no correlation (around 0)
+# red: strong positive correlation (close to +1)
+heatmap(
+  cor_matrix,
+  Rowv = NA,
+  Colv = NA,
+  col = colorRampPalette(c("blue", "white", "red"))(100),
+  scale = "none",
+  margins = c(8, 8),
+  main = "Species Correlation Heatmap"
+)
+
+dev.copy(png, "heatmap.png", width = 800, height = 600)
+dev.off()
+
+```
+
+## Gap statistic to find optimal number of clusters
+
+```{r}
+#| label: Gap statistic to find optimal number of clusters
+
+# k-means for range of potential clusters
+# wss = within-cluster sum of squared errors (inertia?)
+
+# number of clusters to test
+k_values <- 1:10
+wss_values <- numeric(length(k_values))  # empty vector to keep k_avlues
+
+# loop over k = 1 to 10
+for (i in seq_along(k_values)) {
+  k <- k_values[i]
+# cut tree into k clusters
+  groups <- cutree(hc, k = k)
+# get list of unique clusters
+  cluster_ids <- unique(groups)
+# begin WSS for this k
+  total_wss <- 0
+# loop over each cluster
+  for (g in cluster_ids) {
+    members <- which(groups == g)                     # indices of members
+    distance <- as.matrix(dist_matrix)[members, members]     # distances within cluster
+    total_wss <- total_wss + sum(distance^2) / (2 * length(members))
+  }
+  
+  # keep result
+  wss_values[i] <- total_wss
+}
+
+# plot elbow curve
+# the point in between where there is a steep slope is number to use
+plot(k_values, wss_values, type = "b", pch = 19,
+     xlab = "Number of clusters (k)",
+     ylab = "Within-cluster sum of squares",
+     main = "Elbow Method to Estimate Optimal Number of Clusters")
+
+png("elbow_plot.png", width = 800, height = 600)
+plot(k_values, wss_values, type = "b", pch = 19,
+     xlab = "Number of clusters (k)",
+     ylab = "Within-cluster sum of squares",
+     main = "Elbow Method to Estimate Optimal Number of Clusters")
+dev.off()
+
+
+
+```
+
+![]()
